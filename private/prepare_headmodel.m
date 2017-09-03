@@ -109,7 +109,12 @@ end
 % sens      = struct(sens);
 
 % the prepare_vol_sens function from the forwinv module does most of the actual work
-[headmodel, sens] = ft_prepare_vol_sens(headmodel, sens, 'channel', cfg.channel, 'order', cfg.order);
+% - this is only done if the transfer matrix is not already present. i
+% didnt test this for further changes that are potentially made to
+% headmodel and sens by ft_prepare_vol_sens - Jens
+if ~isfield(headmodel, 'transfer')
+    [headmodel, sens] = ft_prepare_vol_sens(headmodel, sens, 'channel', cfg.channel, 'order', cfg.order);
+end
 
 % update the selected channels in the configuration
 if iscell(sens)

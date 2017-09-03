@@ -603,6 +603,8 @@ elseif strcmp(cfg.method, 'interactive')
   tmpcfg = ft_interactiverealign(tmpcfg);
   % only keep the transformation, it will be applied to the electrodes further down
   norm.m = tmpcfg.m;
+  view(180,-25)
+  waitfor(fig);
   
   
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

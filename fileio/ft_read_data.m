@@ -460,16 +460,6 @@ switch dataformat
     %apply v = a*d + b to each row of the matrix
     dat=bsxfun(@plus,bsxfun(@times, double(orig.Data), a'),b');
     
-  case 'neuroomega_mat'
-    % These are MATLAB *.mat files created by the software 'Map File
-    % Converter' from the original .mpx files recorded by NeuroOmega
-    dat=zeros(hdr.nChans,hdr.nSamples);
-    for i=1:hdr.nChans
-      v=double(hdr.orig.(hdr.label{i}));
-      v=v*hdr.orig.(char(strcat(hdr.label{i},'_BitResolution')));
-      dat(i,:)=v(begsample:endsample); %channels sometimes have small differences in samples
-    end
-    
   case {'brainvision_eeg', 'brainvision_dat', 'brainvision_seg'}
     dat = read_brainvision_eeg(filename, hdr.orig, begsample, endsample, chanindx);
     
@@ -1089,7 +1079,7 @@ switch dataformat
     dat = read_neuralynx_ds(filename, hdr, begsample, endsample, chanindx);
     
   case 'neuralynx_cds'
-    dat = read_neuralynx_cds(filename, hdr, begsample, endsample, chanindx);
+    dat = read_neuralynx_cds(filename, hdr, begsample, endsample, chanindx);  
     
   case 'nexstim_nxe'
     dat = read_nexstim_nxe(filename, begsample, endsample, chanindx);
@@ -1142,6 +1132,22 @@ switch dataformat
     dat       = dat(:,chanindx,:);      % select channels
     dimord    = 'trials_chans_samples'; % selection using begsample and endsample will be done later
     
+  case 'neuromag_maxfilterlog'
+    log = hdr.orig;
+    dat = [
+      log.t(:)'
+      log.e(:)'
+      log.g(:)'
+      log.v(:)'
+      log.r(:)'
+      log.d(:)'
+      ];
+    for i=1:length(log.hpi)
+      dat = cat(1, dat, log.hpi{i});
+    end
+    dat = dat(chanindx, begsample:endsample);
+    dimord = 'chans_samples';
+
   case {'neuromag_fif' 'neuromag_mne'}
     % check that the required low-level toolbox is available
     ft_hastoolbox('mne', 1);
@@ -1192,6 +1198,16 @@ switch dataformat
     begsample = begsample - (begepoch-1)*hdr.nSamples;  % correct for the number of bytes that were skipped
     endsample = endsample - (begepoch-1)*hdr.nSamples;  % correct for the number of bytes that were skipped
     dat = dat(:, begsample:endsample);
+    
+	case 'neuroomega_mat'
+    % These are MATLAB *.mat files created by the software 'Map File
+    % Converter' from the original .mpx files recorded by NeuroOmega
+    dat=zeros(hdr.nChans,endsample - begsample + 1);
+    for i=1:hdr.nChans
+      v=double(hdr.orig.(hdr.label{i}));
+      v=v*hdr.orig.(char(strcat(hdr.label{i},'_BitResolution')));
+      dat(i,:)=v(begsample:endsample); %channels sometimes have small differences in samples
+    end  
     
   case {'neurosim_ds' 'neurosim_signals'}
     [hdr, dat] = read_neurosim_signals(filename);

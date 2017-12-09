@@ -705,7 +705,10 @@ elseif  ~isempty(intersect(outp, {'white' 'gray' 'csf' 'brain' 'skull' 'scalp' '
       fprintf('creating skullmask ... ');
       if ~isfield(segmented, 'bone')
         fprintf('using the brainmask\n');
-        braindil  = imdilate(brainmask>0, strel_bol(6));
+		if ~isfield(cfg, 'skullthickness')
+			cfg.skullthickness = 6;
+		end
+        braindil  = imdilate(brainmask>0, strel_bol(cfg.skullthickness));
         skullmask = braindil & ~brainmask;
         clear braindil
       elseif isfield(segmented, 'bone')

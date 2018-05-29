@@ -1262,7 +1262,8 @@ switch dataformat
     tmp = np_readdata(filename, hdr.orig, begsample - 1, endsample - begsample + 1, 'samples');
     dat = tmp.data(:,chanindx)';
     
-  case 'oxy3'
+  case 'artinis_oxy3'
+    ft_hastoolbox('artinis', 1);
     dat = read_artinis_oxy3(filename, hdr, begsample, endsample, chanindx);
     
   case 'plexon_ds'
@@ -1377,7 +1378,7 @@ switch dataformat
   case 'read_nex_data' % this is an alternative reader for nex files
     dat = read_nex_data(filename, hdr, begsample, endsample, chanindx);
     
-  case 'riff_wave'
+  case {'riff_wave', 'audio_m4a'}
     dat = audioread(filename, [begsample endsample])';
     dat = dat(chanindx,:);
     

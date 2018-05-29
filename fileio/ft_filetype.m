@@ -1063,9 +1063,13 @@ elseif filetype_check_extension(filename, '.sd') && filetype_check_header(filena
   
   % known Artinis file format
 elseif filetype_check_extension(filename, '.oxy3')
-  type = 'oxy3';
+  type = 'artinis_oxy3';
   manufacturer = 'Artinis Medical Systems';
   content = '(f)NIRS data';
+elseif isequal([f x], 'optodetemplates.xml')
+  type = 'artinis_xml';
+  manufacturer = 'Artinis Medical Systems';
+  content = '(f)NIRS optode layout';
   
   % known TETGEN file types, see http://tetgen.berlios.de/fformats.html
 elseif any(filetype_check_extension(filename, {'.node' '.poly' '.smesh' '.ele' '.face' '.edge' '.vol' '.var' '.neigh'})) && exist(fullfile(p, [f '.node']), 'file') && filetype_check_ascii(fullfile(p, [f '.node']), 100) && exist(fullfile(p, [f '.poly']), 'file')
@@ -1195,6 +1199,10 @@ elseif filetype_check_extension(filename, '.mat') && filetype_check_header(filen
 elseif filetype_check_header(filename, 'RIFF', 0) && filetype_check_header(filename, 'WAVE', 8)
   type = 'riff_wave';
   manufacturer = 'Microsoft';
+  content = 'audio';
+elseif filetype_check_extension(filename, '.m4a')
+  type = 'audio_m4a';
+  manufacturer = 'Apple';
   content = 'audio';
 elseif filetype_check_extension(filename, '.txt') && filetype_check_header(filename, 'Site')
   type = 'easycap_txt';

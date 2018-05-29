@@ -2240,7 +2240,7 @@ switch headerformat
     hdr.label       = {tmp.hdr.entityinfo(tmp.list.analog(tmp.analog.contcount~=0)).EntityLabel}; %%% contains non-unique chans?
     hdr.orig        = tmp; % remember the original header
     
-  case 'oxy3'
+  case 'artinis_oxy3'
     ft_hastoolbox('artinis', 1);
     hdr = read_artinis_oxy3(filename);
     
@@ -2477,7 +2477,7 @@ switch headerformat
       hdr.grad = yokogawa2grad(hdr);
     end
     
-  case 'riff_wave'
+  case {'riff_wave', 'audio_m4a'}
     % prior to MATLAB R2015b this used to be done with "wavread"
     % but the audioinfo/audioread function are at least available from 2012b up
     info = audioinfo(filename);

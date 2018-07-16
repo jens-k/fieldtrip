@@ -1,6 +1,7 @@
-function testOpenMEEGeeg
+function test_openmeeg_eeg
 
-% TEST testOpenMEEGeeg
+% TEST test_openmeeg_eeg
+% (previously called testOpenMEEGeeg)
 % Test the computation of an EEG leadfield with OpenMEEG
 
 % Copyright (C) 2010-2017, OpenMEEG developers
@@ -12,7 +13,7 @@ dippos = [0 0 70];
 
 %% Set the radius and conductivities of each of the compartments
 
-% 4 Layers
+% 4 Layers, defined from outside to inside (i.e., [scalp skull CSF brain])
 r = [100 92 88 85];
 c = [1 1/80 1/20 1];
 
@@ -27,7 +28,7 @@ thr = 2e-2;
 assert(norm(rdms-[0.019963 0.019962 0.10754])<thr)
 assert(norm(mags-[0.84467 0.84469 0.83887])<thr)
 
-% 3 Layers
+% 3 Layers, defined from outside to inside (i.e., [scalp skull brain])
 r = [100 92 88];
 c = [1 1/80 1];
 
@@ -37,7 +38,7 @@ c = [1 1/80 1];
 assert(norm(rdms-[0.064093 0.064092 0.13532])<thr)
 assert(norm(mags-[1.0498 1.0498 1.0207])<thr)
 
-% 2 Layers
+% 2 Layers, defined from outside to inside
 r = [100 92];
 c = [1/4 1];
 
@@ -47,7 +48,7 @@ c = [1/4 1];
 assert(norm(rdms-[0.15514 0.15514 0.1212])<thr)
 assert(norm(mags-[1.8211 1.8211 1.3606])<thr)
 
-% 1 Layers
+% 1 Layer
 r = [100];
 c = [1];
 
@@ -74,7 +75,7 @@ function [rdms,mags] = run_bem_computation(r,c,dippos)
         sens.label{ii} = sprintf('vertex%03d', ii);
     end
 
-    %% Create a triangulated mesh, the first boundary is inside
+    %% Create a triangulated mesh, the first boundary is outside
     bnd = [];
     for ii=1:length(r)
         bnd(ii).pos = pos * r(ii);
@@ -94,16 +95,17 @@ function [rdms,mags] = run_bem_computation(r,c,dippos)
     vol_bem.type = 'openmeeg';
 
     % ft_prepare_headmodel has a bug; likely the geom file does not match
-    % the order of the layers
+    % the true order of the layers
     %cfg.conductivity = c;
     %vol_bem = ft_prepare_headmodel(cfg, bnd);
+    %
+    % though, removing the computed headmodel matrix makes it work, as a hack:
     %vol_bem = rmfield(vol_bem,'mat');
-    
+
     cfg.vol = vol_bem;
     cfg.grid.pos = dippos;
     cfg.grid.unit = 'mm';
     cfg.elec = sens;
-%    grid = ft_prepare_leadfield(cfg);
     grid = ft_prepare_leadfield(cfg);
 
     lf_openmeeg = grid.leadfield{1};

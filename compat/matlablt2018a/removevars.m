@@ -1,10 +1,14 @@
-function [varargout] = pad(varargin)
+function varargout = removevars(varargin)
 
-% PAD adds leading or trailing characters, such as spaces, to the left or
-% right of an existing string.
+% T2 = removevars(T1,vars) deletes the table variables specified
+% by vars and copies the remaining variables to T2 (see diagram). You
+% can specify variables by name, by position, or using logical indices.
+%
+% Use as
+%   T2 = removevars(T1, vars)
 %
 % This is a compatibility function that should only be added to the path on
-% MATLAB versions prior to 2016b.
+% MATLAB versions prior to 2018a.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % see https://github.com/fieldtrip/fieldtrip/issues/899
@@ -25,66 +29,35 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % this is where the actual replacement code starts
-% function s = pad(s, n, side, c)
+% function T2 = removevars1(T1, vars)
 
 % deal with the input arguments
-if nargin==1
-  [s            ] = deal(varargin{1:1});
-elseif nargin==2
-  [s, n         ] = deal(varargin{1:2});
-elseif nargin==3
-  [s, n, side   ] = deal(varargin{1:3});
-elseif nargin==4
-  [s, n, side, c] = deal(varargin{1:4});
+if nargin==2
+  [T1, vars] = deal(varargin{1:2});
 else
   error('incorrect number of input arguments')
 end
 
-if nargin<4 || isempty(c)
-  c = ' ';
-end
-
-if nargin<3 || isempty(side)
-  side = 'right';
-end
-
-if nargin<2 || isempty(n)
-  if iscell(s)
-    n = max(cellfun(@length, s(:)));
-  else
-    n = length(s);
-  end
-end
-
-if iscell(s)
-  % use recursion to deal with cell-arrays
-  for i=1:numel(s)
-    s{i} = pad(s{i}, n, side, c);
-  end
-
-else
-  % this is where the actual work happens
-  assert(size(s,1)<2);
-  assert(ischar(s));
-  assert(numel(c)==1);
-  assert(ischar(c));
-
-  if length(s)>=n
-    return
-  else
-    c = repmat(c, 1, n-length(s));
-    switch (side)
-      case 'left'
-        s = [c s];
-      case 'right'
-        s = [s c];
-      otherwise
-        error('unsupported side')
-    end % switch
+if islogical(vars)
+  vars = T1.Properties.VariableNames(vars);
+  T2 = removevars1(T1, vars);
+elseif isnumeric(vars)
+  vars = T1.Properties.VariableNames(vars);
+  T2 = removevars1(T1, vars);
+elseif ischar(vars)
+  vars = {vars};
+  T2 = removevars1(T1, vars);
+elseif iscell(vars)
+  T2 = table();
+  for i=1:numel(T1.Properties.VariableNames)
+    var = T1.Properties.VariableNames{i};
+    if ~ismember(var, vars)
+      T2.(var) = T1.(var);
+    end
   end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % deal with the output arguments
 
-varargout = {s};
+varargout = {T2};

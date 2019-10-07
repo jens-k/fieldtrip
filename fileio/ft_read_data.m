@@ -1,8 +1,8 @@
 function [dat] = ft_read_data(filename, varargin)
 
-% FT_READ_DATA reads electrophysiological data from a variety of EEG, MEG and LFP
-% files and represents it in a common data-independent format. The supported formats
-% are listed in the accompanying FT_READ_HEADER function.
+% FT_READ_DATA reads data from a variety of EEG, MEG and other time series data files
+% and represents it in a common data-independent format. The supported formats are
+% listed in the accompanying FT_READ_HEADER function.
 %
 % Use as
 %   dat = ft_read_data(filename, ...)
@@ -29,15 +29,14 @@ function [dat] = ft_read_data(filename, varargin)
 % Nchans*Nsamples*Ntrials for epoched or trial-based data when begtrial
 % and endtrial are specified.
 %
-% The list of supported file formats can be found in FT_READ_HEADER.
-%
-% To use an external reading function, you can specify the function name as argument
-% to 'dataformat'. The function needs to be on the path, and should take as input:
-% filename, hdr, begsample, endsample, chanindx.
+% To use an external reading function, you can specify a function as the 'dataformat'
+% option. This function should take five input arguments: filename, hdr, begsample,
+% endsample, chanindx. Please check the code of this function for details, and search
+% for BIDS_TSV as example.
 %
 % See also FT_READ_HEADER, FT_READ_EVENT, FT_WRITE_DATA, FT_WRITE_EVENT
 
-% Copyright (C) 2003-2018 Robert Oostenveld
+% Copyright (C) 2003-2019 Robert Oostenveld
 %
 % This file is part of FieldTrip, see http://www.fieldtriptoolbox.org
 % for the documentation and details.
@@ -531,10 +530,10 @@ switch dataformat
   case 'ced_spike6mat'
     dat = read_spike6mat_data(filename, 'header', hdr, 'begsample', begsample, 'endsample', endsample, 'chanindx', chanindx);
     
-  case {'curry_dat', 'curry_cdt'} 
+  case {'curry_dat', 'curry_cdt'}
     [orig, dat] = load_curry_data_file(datafile);
     if orig.nMultiplex
-        dat = dat';
+      dat = dat';
     end
     dat = dat(chanindx, begsample:endsample);
     
@@ -672,7 +671,7 @@ switch dataformat
   case 'egi_mff_v2'
     % ensure that the EGI_MFF_V2 toolbox is on the path
     ft_hastoolbox('egi_mff_v2', 1);
-
+    
     %%%%%%%%%%%%%%%%%%%%%%
     %workaround for MATLAB bug resulting in global variables being cleared
     globalTemp=cell(0);
@@ -698,7 +697,7 @@ switch dataformat
     end
     clear globalTemp globalList varNames varList;
     %%%%%%%%%%%%%%%%%%%%%%
-
+    
     if isunix && filename(1)~=filesep
       % add the full path to the dataset directory
       filename = fullfile(pwd, filename);
@@ -706,7 +705,7 @@ switch dataformat
       % add the full path, including drive letter
       filename = fullfile(pwd, filename);
     end
-
+    
     % pass the header along to speed it up, it will be read on the fly in case it is empty
     dat = read_mff_data(filename, 'sample', begsample, endsample, chanindx, hdr);
     
@@ -1008,7 +1007,7 @@ switch dataformat
   case {'mpi_ds', 'mpi_dap'}
     [hdr, dat] = read_mpi_ds(filename);
     dat = dat(chanindx, begsample:endsample); % select the desired channels and samples
-
+    
   case 'nervus_eeg'
     hdr = read_nervus_header(filename);
     % Nervus usually has discontinuous EEGs, e.g. pauses in clinical
@@ -1022,7 +1021,7 @@ switch dataformat
       dat = cat(1,dat,datseg);
     end
     dimord = 'samples_chans';
-
+    
   case 'neuroscope_bin'
     switch hdr.orig.nBits
       case 16
@@ -1409,12 +1408,23 @@ switch dataformat
     ft_hastoolbox('ricoh_meg_reader', 1);
     dat = read_ricoh_data(filename, hdr, begsample, endsample, chanindx);
     
-  case {'riff_wave', 'audio_m4a'}
+  case {'audio_wav', 'audio_ogg', 'audio_flac', 'audio_au', 'audio_aiff', 'audio_aif', 'audio_aifc', 'audio_mp3', 'audio_m4a', 'audio_mp4'}
     dat = audioread(filename, [begsample endsample])';
     dat = dat(chanindx,:);
     
   case 'spmeeg_mat'
     dat = read_spmeeg_data(filename, 'header', hdr, 'begsample', begsample, 'endsample', endsample, 'chanindx', chanindx);
+    
+  case 'smi_txt'
+    if isfield(hdr.orig, 'trigger')
+      % this is inefficient, since it keeps the complete data in memory
+      % but it does speed up subsequent read operations without the user
+      % having to care about it
+      smi = hdr.orig;
+    else
+      smi = read_smi_txt(filename);
+    end
+    dat = smi.dat(chanindx,begsample:endsample);
     
   case 'tmsi_poly5'
     blocksize = hdr.orig.header.SamplePeriodsPerBlock;
@@ -1432,7 +1442,7 @@ switch dataformat
   case 'videomeg_vid'
     dat = read_videomeg_vid(filename, hdr, begsample, endsample);
     dat = dat(chanindx,:);
-
+    
   case 'video'
     dat = read_video(filename, hdr, begsample, endsample, chanindx);
     
@@ -1451,12 +1461,13 @@ switch dataformat
       ft_hastoolbox('yokogawa', 1); % error if it cannot be added
       dat = read_yokogawa_data(filename, hdr, begsample, endsample, chanindx);
     end
-        
+    
   otherwise
     % attempt to run "dataformat" as a function
     % this allows the user to specify an external reading function
     % if it fails, the regular unsupported warning message is thrown
     try
+      % this is used for bids_tsv, biopac_acq, motion_c3d, opensignals_txt, qualisys_tsv, and possibly others
       dat = feval(dataformat, filename, hdr, begsample, endsample, chanindx);
     catch
       if strcmp(fallback, 'biosig') && ft_hastoolbox('BIOSIG', 1)

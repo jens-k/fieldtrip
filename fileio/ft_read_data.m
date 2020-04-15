@@ -29,14 +29,14 @@ function [dat] = ft_read_data(filename, varargin)
 % Nchans*Nsamples*Ntrials for epoched or trial-based data when begtrial
 % and endtrial are specified.
 %
-% To use an external reading function, you can specify a function as the 'dataformat'
-% option. This function should take five input arguments: filename, hdr, begsample,
-% endsample, chanindx. Please check the code of this function for details, and search
-% for BIDS_TSV as example.
+% To use an external reading function, you can specify an external function as the
+% 'dataformat' option. This function should take five input arguments: filename, hdr,
+% begsample, endsample, chanindx. Please check the code of this function for details,
+% and search for BIDS_TSV as example.
 %
 % See also FT_READ_HEADER, FT_READ_EVENT, FT_WRITE_DATA, FT_WRITE_EVENT
 
-% Copyright (C) 2003-2019 Robert Oostenveld
+% Copyright (C) 2003-2020 Robert Oostenveld
 %
 % This file is part of FieldTrip, see http://www.fieldtriptoolbox.org
 % for the documentation and details.
@@ -1026,11 +1026,32 @@ switch dataformat
     % recordings. The code currently concatenates these trials.
     % We could set this up as separate "trials" later.
     % We could probably add "boundary events" in EEGLAB later
-    dat = zeros(0,size(hdr.orig.Segments(1).chName,2));
-    for segment=1:size(hdr.orig.Segments,2)
-      range = [1 hdr.orig.Segments(segment).sampleCount];
-      datseg = read_nervus_data(hdr.orig,segment, range, chanindx);
-      dat = cat(1,dat,datseg);
+    
+    %Fieldtrip can't handle multiple sampling rates in a data block
+    %We will get only the data with the most frequent sampling rate
+            
+    targetNumberOfChannels = hdr.orig.targetNumberOfChannels;
+    targetSampleCount = hdr.orig.targetSampleCount;
+    
+    dat = zeros(targetSampleCount,targetNumberOfChannels);
+    j = 1;
+    for i=1:size(hdr.orig.Segments(1).samplingRate,2)
+      if hdr.orig.Segments(1).samplingRate(i) == hdr.Fs
+        dataForChannel = [];
+        %disp(['Reading channel ' num2str(i)]);
+        for segment=1:size(hdr.orig.Segments,2)
+          %disp(['Reading channel ' num2str(i) ' segment ' num2str(segment)]);
+          range = [1 hdr.orig.Segments(segment).sampleCount];
+          datseg = read_nervus_data(hdr.orig, segment, range, i);
+          dataForChannel = cat(1,dataForChannel,datseg);
+        end
+        dat(1:targetSampleCount, j) = dataForChannel;
+        j = j+1;
+      end
+    end
+    if targetNumberOfChannels ~= size(hdr.orig.Segments(1).sampleCount, 2)
+      excludedChannelLabels = strjoin({hdr.orig.TSInfo(hdr.orig.excludedChannels).label}, ', ');
+      warning(['Some channels ignored due to different sampling rates: ' excludedChannelLabels]);
     end
     dimord = 'samples_chans';
     

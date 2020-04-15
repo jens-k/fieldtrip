@@ -133,7 +133,7 @@ url = {
   'MYSQL'         'see http://www.mathworks.com/matlabcentral/fileexchange/8663-mysql-database-connector'
   'ISO2MESH'      'see http://iso2mesh.sourceforge.net/cgi-bin/index.cgi?Home or contact Qianqian Fang'
   'DATAHASH'      'see http://www.mathworks.com/matlabcentral/fileexchange/31272'
-  'IBTB'          'see https://github.com/selimonat/InformationBreakdownToolbox'
+  'IBTB'          'see Magri et al. BMC Neurosci 2009, 10:81'
   'ICASSO'        'see http://www.cis.hut.fi/projects/ica/icasso'
   'XUNIT'         'see http://www.mathworks.com/matlabcentral/fileexchange/22846-matlab-xunit-test-framework'
   'PLEXON'        'available from http://www.plexon.com/assets/downloads/sdk/ReadingPLXandDDTfilesinMatlab-mexw.zip'
@@ -164,6 +164,7 @@ url = {
   'MRTRIX'        'see https://mrtrix.org'
   'BAYESFACTOR'   'see https://klabhub.github.io/bayesFactor'
   'EZC3D'         'see https://github.com/pyomeca/ezc3d'
+  'XSENS'         'see https://www.xsens.com/motion-capture and http://www.fieldtriptoolbox.org/getting_started/xsens/'
   };
 
 if nargin<2
@@ -407,7 +408,9 @@ switch toolbox
     dependency = {'bf.ttest', 'bf.ttest2'};
   case 'EZC3D'
     dependency = {'ezc3dRead', 'ezc3dWrite'};
-    
+  case 'XSENS'
+    dependency = {'load_mvnx'};
+        
     % the following are FieldTrip modules/toolboxes
   case 'FILEIO'
     dependency = {'ft_read_header', 'ft_read_data', 'ft_read_event', 'ft_read_sens'};

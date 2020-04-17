@@ -57,11 +57,12 @@ orig.SlowMaxMagnitudeMV = SlowPeakV;
 [dummy, filters] = plx_chan_filters(fname);
 [dummy, thresholds] = plx_chan_thresholds(fname);
 [dummy, evnames] = plx_event_names(fname);
-[dummy, ad_names] = plx_adchan_names(fname);
 [dummy, adchans] = plx_ad_chanmap(fname);
-[dummy, ad_freqs] = plx_adchan_freqs(fname);
-[dummy, ad_gains] = plx_adchan_gains(fname);
-
+if ~isempty(adchans) % only in case there are analogue channels
+	[dummy, ad_names] = plx_adchan_names(fname);
+	[dummy, ad_freqs] = plx_adchan_freqs(fname);
+	[dummy, ad_gains] = plx_adchan_gains(fname);
+end
 % do channelheaders...
 for i=1:orig.NumDSPChannels
   head = [];

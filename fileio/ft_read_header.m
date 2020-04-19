@@ -2416,7 +2416,51 @@ switch headerformat
     end
     hdr.label = hdr.label(:);
     hdr.nChans = length(hdr.label);
-    
+
+  case {'plexon_plx_v2'}
+    ft_hastoolbox('PLEXON', 1);
+	orig = plx_orig_header(filename);
+	if orig.NumSlowChannels~=0
+		for i=1:length(orig.SlowChannelHeader)
+			label{i} = deblank(orig.SlowChannelHeader(i).Name);
+		end
+		% continuous channels don't always contain data, remove the empty ones
+		[~, scounts] = plx_adchan_samplecounts(filename);
+		chansel		= scounts > 0;
+		chansel		= find(chansel); % this is required for timestamp selection
+		label		= label(chansel);
+		fsample		= [orig.SlowChannelHeader.ADFreq];
+		fsample		= fsample(chansel); %select non-empty channels only
+		if any(fsample~=fsample(1))
+			error('different sampling rates in continuous data not supported');
+		end
+		hdr.Fs          = fsample(1);
+		hdr.nSamples	= max(scounts);
+		hdr.TimeStampPerSample = double(orig.ADFrequency) / hdr.Fs;
+		hdr.label		= label;
+		% 		% Old code to process spike data
+		% 		hdr.Fs			= orig.ADFrequency;
+		% 		hdr.nSamples	= orig.LastTimestamp;
+		% 		for i=1:length(orig.ChannelHeader)
+		% 			hdr.label{i} = deblank(orig.ChannelHeader(i).Name);
+		% 		end
+		hdr.label		= hdr.label(:);
+		hdr.nChans		= length(hdr.label);
+		hdr.nSamplesPre = 0;      % continuous
+		hdr.nTrials     = 1;      % continuous
+		hdr.orig        = orig;	  % also remember the original header
+	else
+		% handled in case output of this type is expected by calling
+		% function
+		ft_warning('file does not contain continuous (slow analog) channels');
+		hdr.orig        = orig;	  % remember the original header
+		hdr.label		= {};	  % add some dummy fields
+		hdr.nChans		= 0;
+		hdr.Fs			= [];
+		hdr.nSamples	= 0;
+		hdr.nSamplesPre = 0;      
+		hdr.nTrials     = 0;      
+	end
   case {'ricoh_ave', 'ricoh_con', 'ricoh_mrk'}
     % header can be read with Ricoh MEG Reader
     hdr = read_ricoh_header(filename);
@@ -2501,48 +2545,7 @@ switch headerformat
     % keyboard
     % remember the original header details
     hdr.orig = tsv;
-    
-  case {'plexon_plx_v2'}
-    ft_hastoolbox('PLEXON', 1);
-    orig = plx_orig_header(filename);
-	if orig.NumSlowChannels ~=0 && orig.NumDSPChannels~=0
-		warning('Analog (e.g., LFP) data detected, dropping spike data to avoid inconsistent sampling rates');
-	end
-	if orig.NumSlowChannels~=0 
-		% If analog data
-		for i=1:length(orig.SlowChannelHeader)
-			label{i} = deblank(orig.SlowChannelHeader(i).Name);
-		end
-		% continuous channels don't always contain data, remove the empty ones
-		[~, scounts] = plx_adchan_samplecounts(filename);
-		chansel		= scounts > 0;
-		chansel		= find(chansel); % this is required for timestamp selection
-		label		= label(chansel);
-		fsample		= [orig.SlowChannelHeader.ADFreq];
-		fsample		= fsample(chansel); %select non-empty channels only
-		if any(fsample~=fsample(1))
-			error('different sampling rates in continuous data not supported');
-		end	
-		hdr.Fs          = fsample(1);
-		hdr.nSamples	= max(scounts);
-		hdr.TimeStampPerSample = double(orig.ADFrequency) / hdr.Fs;
-		hdr.label		= label;
-	elseif orig.NumDSPChannels~=0
-		% If spike data
-		hdr.Fs			= orig.ADFrequency;
-		hdr.nSamples	= orig.LastTimestamp;
-		for i=1:length(orig.ChannelHeader)
-			hdr.label{i} = deblank(orig.ChannelHeader(i).Name);
-		end
-	else
-		error('neither analog nor spike data detected')
-	end
-	hdr.label		= hdr.label(:);
-    hdr.nChans		= length(hdr.label);
-	hdr.nSamplesPre = 0;      % continuous
-	hdr.nTrials     = 1;      % continuous
-    hdr.orig        = orig; % also remember the original header
-    
+        
   case {'tdt_tsq', 'tdt_tev'}
     % FIXME the code below is not yet functional, it requires more input from the ESI in Frankfurt
     %     tsq = read_tdt_tsq(headerfile);

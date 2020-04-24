@@ -2424,16 +2424,18 @@ switch headerformat
 		for i=1:length(orig.SlowChannelHeader)
 			label{i} = deblank(orig.SlowChannelHeader(i).Name);
 		end
-		% continuous channels don't always contain data, remove the empty ones
+		% continuous channels don't always contain data, remove the empty
+		% ones; in case data was sampled with different frequencies choose
+		% only the slowest one
+		if numel(unique([orig.SlowChannelHeader.ADFreq])) > 1
+			warning('continuous data with different sampling rates detected, choosing slowest one');
+		end
 		[~, scounts] = plx_adchan_samplecounts(filename);
-		chansel		= scounts > 0;
+		chansel		= scounts > 0 & ([orig.SlowChannelHeader.ADFreq]' == min([orig.SlowChannelHeader.ADFreq]));
 		chansel		= find(chansel); % this is required for timestamp selection
 		label		= label(chansel);
 		fsample		= [orig.SlowChannelHeader.ADFreq];
 		fsample		= fsample(chansel); %select non-empty channels only
-		if any(fsample~=fsample(1))
-			error('different sampling rates in continuous data not supported');
-		end
 		hdr.Fs          = fsample(1);
 		hdr.nSamples	= max(scounts);
 		hdr.TimeStampPerSample = double(orig.ADFrequency) / hdr.Fs;

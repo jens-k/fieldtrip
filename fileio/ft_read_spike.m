@@ -232,7 +232,7 @@ switch spikeformat
 	  ft_hastoolbox('PLEXON', 1);
 	  hdr = ft_read_header(filename);
 	  hdr = hdr.orig;
-	  nchan = length(hdr.WFCounts)-1;
+	  nchan = size(hdr.WFCounts, 2)-1;
   
 	  for i=1:nchan
 	    spike.label{i} = deblank(hdr.ChannelHeader(i).Name);

@@ -90,18 +90,18 @@ if strcmp(cfg.computestat, 'yes')
     var1 = nanvar(dat(:,sel1), 0, 2);
   else
     avg1 = mean(dat(:,sel1), 2);
-    var1 = var(dat(:,sel1), 0, 2); % JK: uncommented this line
+    % var1 = var(dat(:,sel1), 0, 2);
     % the following achieves the same as the line above, but faster
-%     var1 = (sum(dat(:,sel1).^2,2)-(avg1.^2).*nreplc1)./(nreplc1-1); % JK: commented out this line 
+    var1 = (sum(dat(:,sel1).^2,2)-(avg1.^2).*nreplc1)./(nreplc1-1);
   end
   if hasnans2
     avg2 = nanmean(dat(:,sel2), 2);
     var2 = nanvar(dat(:,sel2), 0, 2);
   else
     avg2 = mean(dat(:,sel2), 2);
-    var2 = var(dat(:,sel2), 0, 2);  % JK: uncommented this line
+    % var2 = var(dat(:,sel2), 0, 2);
     % the following achieves the same as the line above, but faster
-%     var2 = (sum(dat(:,sel2).^2,2)-(avg2.^2).*nreplc2)./(nreplc2-1); % JK: commented out this line 
+    var2 = (sum(dat(:,sel2).^2,2)-(avg2.^2).*nreplc2)./(nreplc2-1);
   end
 
   varc = (1./nreplc1 + 1./nreplc2).*((nreplc1-1).*var1 + (nreplc2-1).*var2)./df;

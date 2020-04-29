@@ -2463,7 +2463,6 @@ switch headerformat
 		hdr.nSamplesPre = 0;      
 		hdr.nTrials     = 0;      
 	end
-
   case {'ricoh_ave', 'ricoh_con', 'ricoh_mrk'}
     % header can be read with Ricoh MEG Reader
     hdr = read_ricoh_header(filename);
@@ -2548,7 +2547,7 @@ switch headerformat
     % keyboard
     % remember the original header details
     hdr.orig = tsv;
-
+        
   case {'tdt_tsq', 'tdt_tev'}
     % FIXME the code below is not yet functional, it requires more input from the ESI in Frankfurt
     %     tsq = read_tdt_tsq(headerfile);

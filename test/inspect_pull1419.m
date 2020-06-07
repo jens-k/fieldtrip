@@ -32,7 +32,7 @@ path_matnwb			= '../matnwb';
 
 % Dataset from https://osf.io/hv7ja/
 % Info about the data: https://github.com/rutishauserlab/recogmem-release-NWB
-path_nwbfile{1}		=	'D:\NWB\data\NWBData\NWBData\P9HMH_NOID5.nwb'; 
+path_nwbfile{1}		=	'D:\NWB\data\NWBData\NWBData\P9HMH_NOID5.nwb';
 
 % Data from https://gui.dandiarchive.org/#/file-browser/folder/5e6eb2b776569eb93f451f8d
 % Info about the data: http://www.buzsakilab.com/content/PDFs/Senzai2017Neuron.pdf
@@ -54,8 +54,8 @@ generateCore()
 %% Conversion Example 1. NWB data, Version 2.1.0
 for iDs = 1:numel(path_nwbfile)
 	% Load data in nwb format
-	nwbfile = path_nwbfile{iDs};
-	nwb		= nwbRead(nwbfile);
+	nwbFile = path_nwbfile{iDs};
+	nwb		= nwbRead(nwbFile);
 	
 	% Try to obtain hdr, lfp data and spike data in FieldTrip format
 	try

@@ -2314,7 +2314,8 @@ switch headerformat
         nwb_version = c.version;
         nwb_fileversion = util.getSchemaVersion(filename);
         if ~strcmp(nwb_version, nwb_fileversion)
-            warning(['Installed NWB:N schema version (' nwb_version ') does not match the file''s schema (' nwb_fileversion{1} '). This might result in an error. If so, try to install the matching schema from here: https://github.com/NeurodataWithoutBorders/nwb-schema/releases'])
+			if iscell(nwb_fileversion), nwb_fileversion = nwb_fileversion{1}; end
+            warning(['Installed NWB:N schema version (' nwb_version ') does not match the file''s schema (' nwb_fileversion '). This might result in an error. If so, try to install the matching schema from here: https://github.com/NeurodataWithoutBorders/nwb-schema/releases'])
         end
     catch
       warning('Something might not be alright with your MatNWB path. Will try anyways.')

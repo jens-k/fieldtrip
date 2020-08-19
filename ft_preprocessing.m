@@ -327,7 +327,7 @@ if hasdata
   cfg.trials = ft_getopt(cfg, 'trials', 'all', 1);
   
   % select trials of interest
-  tmpcfg = keepfields(cfg, {'channel', 'trials', 'showcallinfo'});
+  tmpcfg = keepfields(cfg, {'trials', 'channel', 'tolerance', 'showcallinfo'});
   data   = ft_selectdata(tmpcfg, data);
   % restore the provenance information
   [cfg, data] = rollback_provenance(cfg, data);
@@ -403,7 +403,7 @@ else
   % read the header
   hdr = ft_read_header(cfg.headerfile, 'headerformat', cfg.headerformat,...
     'coordsys', cfg.coordsys, 'coilaccuracy', cfg.coilaccuracy,...
-    'checkmaxfilter', istrue(cfg.checkmaxfilter), 'chantype', cfg.chantype);
+    'checkmaxfilter', cfg.checkmaxfilter, 'chantype', cfg.chantype);
   
   % this option relates to reading over trial boundaries in a pseudo-continuous dataset
   if ~isfield(cfg, 'continuous')

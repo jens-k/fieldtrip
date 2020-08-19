@@ -1,4 +1,3 @@
-
 function [data] = ft_rejectvisual(cfg, data)
 
 % FT_REJECTVISUAL shows the preprocessed data in all channels and/or trials to allow
@@ -342,7 +341,7 @@ end
 cfg.trials = find(trlsel);
 cfg.channel = data.label(chansel);
 
-% perform the selection of channels and trials
+% perform the actual selection of channels and trials
 tmpcfg = [];
 if strcmp(cfg.keepchannel, 'no')
   tmpcfg.channel = cfg.channel;
@@ -353,7 +352,6 @@ end
 data = ft_selectdata(tmpcfg, data);
 % restore the provenance information
 [cfg, data] = rollback_provenance(cfg, data);
-
 
 % convert back to input type if necessary
 switch dtype

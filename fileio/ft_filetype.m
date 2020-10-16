@@ -69,6 +69,7 @@ function [type] = ft_filetype(filename, desired, varargin)
 %  - MAUS *.TextGrid
 %  - Neurodata Without Borders *.nwb
 %  - PhysioNet *.hea and *.dat
+%  - NIRx *.tpl, *.wl1 and *.wl2
 
 % Copyright (C) 2003-2020, Robert Oostenveld
 %
@@ -1114,7 +1115,7 @@ elseif filetype_check_extension(filename, '.txt') && numel(strfind(filename,'_nr
   type = 'bucn_nirs';
   manufacturer = 'BUCN';
   content = 'ascii formatted NIRS data';
-elseif filetype_check_extension(filename, '.nirs') && filetype_check_header(filename, 'MATLAB')
+elseif filetype_check_extension(filename, '.nirs') && (filetype_check_header(filename, 'MATLAB') || ~exist(filename, 'file'))
   % Homer is MATLAB software for NIRS processing, see http://www.nmr.mgh.harvard.edu/DOT/resources/homer2/home.htm
   type = 'homer_nirs';
   manufacturer = 'Homer';
@@ -1124,7 +1125,7 @@ elseif filetype_check_extension(filename, '.sd') && filetype_check_header(filena
   type = 'homer_sd';
   manufacturer = 'Homer';
   content = 'source detector information';
-elseif filetype_check_extension(filename, '.snirf') && filetype_check_header(filename, [137 72 68 70 13 10 26 10])
+elseif filetype_check_extension(filename, '.snirf') && (filetype_check_header(filename, [137 72 68 70 13 10 26 10]) || ~exist(filename, 'file'))
   % this is a HDF5 file, see also https://support.hdfgroup.org/HDF5/doc/H5.format.html#Superblock
   type = 'snirf';
   manufacturer = 'The society for functional near-infrared spectroscopy (SfNIRS)';
@@ -1148,6 +1149,20 @@ elseif isequal([f x], 'optodetemplates.xml')
   manufacturer = 'Artinis Medical Systems';
   content = '(f)NIRS optode layout';
   
+  % known NIRx file formats
+elseif filetype_check_extension(filename, '.tpl') && exist(fullfile(p, [f '.wl1']), 'file') && exist(fullfile(p, [f '.wl2']), 'file')
+  type = 'nirx_tpl';
+  manufacturer = 'NIRx';
+  content = 'NIRS data';
+elseif filetype_check_extension(filename, '.wl1') && exist(fullfile(p, [f '.wl2']), 'file') && exist(fullfile(p, [f '.tpl']), 'file')
+  type = 'nirx_wl1';
+  manufacturer = 'NIRx';
+  content = 'NIRS data';
+elseif filetype_check_extension(filename, '.wl2') && exist(fullfile(p, [f '.tpl']), 'file') && exist(fullfile(p, [f '.wl1']), 'file')
+  type = 'nirx_wl2';
+  manufacturer = 'NIRx';
+  content = 'NIRS data';
+
   % known TETGEN file types, see http://tetgen.berlios.de/fformats.html
 elseif any(filetype_check_extension(filename, {'.node' '.poly' '.smesh' '.ele' '.face' '.edge' '.vol' '.var' '.neigh'})) && exist(fullfile(p, [f '.node']), 'file') && filetype_check_ascii(fullfile(p, [f '.node']), 100) && exist(fullfile(p, [f '.poly']), 'file')
   type = 'tetgen_poly';
@@ -1313,6 +1328,10 @@ elseif filetype_check_extension(filename, '.txt') && filetype_check_header(filen
   type = 'openbci_txt';
   manufacturer = 'OpenBCI';
   content = 'raw EEG data';
+elseif filetype_check_extension(filename, '.txt') && filetype_check_header(filename, '# Version:')
+  type = 'brainsight_txt';
+  manufacturer = 'Rogue Research';
+  content = '3D positions';
 elseif filetype_check_extension(filename, '.txt')
   type = 'ascii_txt';
   manufacturer = '';

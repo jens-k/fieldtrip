@@ -430,7 +430,7 @@ cfg.eeg.SamplingFrequency             = ft_getopt(cfg.eeg, 'SamplingFrequency'  
 cfg.eeg.PowerLineFrequency            = ft_getopt(cfg.eeg, 'PowerLineFrequency'          ); % Frequency (in Hz) of the power grid where the EEG is installed (i.e. 50 or 60).
 cfg.eeg.SoftwareFilters               = ft_getopt(cfg.eeg, 'SoftwareFilters'             ); % List of temporal software filters applied or ideally  key:value pairs of pre-applied filters and their parameter values
 cfg.eeg.CapManufacturer               = ft_getopt(cfg.eeg, 'CapManufacturer'             ); % name of the cap manufacturer
-cfg.eeg.CapModelName                  = ft_getopt(cfg.eeg, 'CapModelName'                ); % Manufacturer's designation of the EEG cap model (e.g. "CAPML128", "actiCAP 64Ch Standard-2")
+cfg.eeg.CapManufacturersModelName     = ft_getopt(cfg.eeg, 'CapManufacturersModelName'   ); % Manufacturer's designation of the EEG cap model (e.g. "CAPML128", "actiCAP 64Ch Standard-2")
 % Manufacturer and ManufacturersModelName are general
 cfg.eeg.EEGChannelCount               = ft_getopt(cfg.eeg, 'EEGChannelCount'             ); % Number of EEG channels included in the recording (e.g. 128).
 cfg.eeg.ECGChannelCount               = ft_getopt(cfg.eeg, 'ECGChannelCount'             ); % Number of ECG channels included in the recording (e.g. 1).
@@ -1536,8 +1536,16 @@ if need_events_tsv
     % use the events table as it is
     events_tsv = cfg.events;
   elseif istable(cfg.events) && all(ismember({'begsample', 'endsample', 'offset'}, fieldnames(cfg.events)))
-    % it is a "trl" matrix formatted as table, use it as it is
+    % it is a "trl" matrix formatted as table, use it as it is, but add
+    % onset and duration
     events_tsv = cfg.events;
+    begsample                   = table2array(events_tsv(:,{'begsample'}));
+    endsample                   = table2array(events_tsv(:,{'endsample'}));
+    onset                       = (begsample-1)./hdr.Fs;
+    duration                    = (endsample-begsample+1)./hdr.Fs; 
+    table_onset_duration        = table(onset, duration);
+    events_tsv                  = [table_onset_duration events_tsv];
+
   elseif isstruct(cfg.events) && ~isempty(cfg.events) && numel(fieldnames(cfg.events))>0
     % it is the output from FT_READ_EVENT
     if exist('hdr', 'var')
@@ -1549,17 +1557,14 @@ if need_events_tsv
     % it is a "trl" matrix formatted as numeric array, convert it to an events table
     begsample = cfg.events(:,1);
     endsample = cfg.events(:,2);
-    offset    = cfg.events(:,3); % this is not used for the events.tsv
-    if any(offset~=0)
-      ft_warning('the offset in the trl matrix is ignored');
-    end
+    offset    = cfg.events(:,3); % this is not used for the events.tsv    
     if size(cfg.events, 2)>3
       ft_warning('additional columns in the trl matrix are ignored');
     end
     % convert to the required fields
     onset     = (begsample-1)/hdr.Fs;
     duration  = (endsample-begsample+1)/hdr.Fs;
-    events_tsv = table(onset, duration);
+    events_tsv = table(onset, duration, begsample, endsample, offset);
   elseif exist('trigger', 'var')
     % convert the triggers from FT_READ_EVENT into a table
     if exist('hdr', 'var')
@@ -1573,9 +1578,13 @@ if need_events_tsv
   else
     ft_warning('no events were specified');
     % make an empty table with columns for onset and duration
-    onset    = [];
-    duration = [];
-    events_tsv = table(onset, duration);
+    onset                   = [];
+    duration                = [];
+    begsample               = [];
+    endsample               = [];
+    offset                  = [];
+
+    events_tsv = table(onset, duration, begsample, endsample, offset);
   end
   
   if isempty(events_tsv)

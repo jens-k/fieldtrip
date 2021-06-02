@@ -432,10 +432,10 @@ for funidx = 1:length(funparameters)
             insideindx = find(functional.inside);
             
             tmpfun = cell2mat(tmpfun);
-            switch(dimord)
-                case {'{pos}_freq_time','{pos}_ori_time','{pos}_unknown_time'} % ori is hack... FT thinks that 3 freq bands is an ori!
-                    tmpfun = reshape(tmpfun,[size(tmpfun,1)/length(insideindx) length(insideindx) size(tmpfun,2)]);
-                    tmpfun = permute(tmpfun, [2 1 3]);
+            if any(strcmp(dimord, {'{pos}_freq_time', '{pos}_unknown_time'})) | strcmp(dimord, '{pos}_ori_time') & isfield(functional, 'freq')
+                tmpfun = reshape(tmpfun,[size(tmpfun,1)/length(insideindx) length(insideindx) size(tmpfun,2)]);
+                tmpfun = permute(tmpfun, [2 1 3]);
+                dimord = '{pos}_freq_time';
             end
             
             %    tmpfun = real(tmpfun);
@@ -538,16 +538,20 @@ for funidx = 1:length(funparameters)
             end
             
             if ndims(fun)>3 || prod(dim)==size(fun,1)
-                if strcmp(dimord, 'pos_freq_time') || strcmp(dimord, 'pos_ori_time')
+                if strcmp(dimord, 'pos_freq_time') 
                     % functional contains time-frequency representation
                     qi      = [1 1];
                     hasfreq = numel(functional.freq)>1;
                     hastime = numel(functional.time)>1;
                     %fun     = reshape(fun, [dim numel(functional.freq) numel(functional.time)]);
                     
+                    if hasfreq == 0
+                        warning('You might want to add a freq field to your input.')
+                    end
+                    
                     fun = permute(fun,[1 3 2]); % reorder to pos_time_freq
                     dimord = 'pos_time_freq';
-                elseif strcmp(dimord, 'pos_time')
+                elseif strcmp(dimord, 'pos_time') || strcmp(dimord, 'pos_ori_time')
                     % functional contains evoked field
                     qi      = 1;
                     hasfreq = 0;
@@ -764,19 +768,19 @@ for funidx = 1:length(funparameters)
                 end
                 
                 if(~isfield(cfg,'time') && ~isfield(cfg,'vox'))
-                    [~,peakind] = max(abs(st.nmt.fun{funidx}(:)));
+                    [dum,peakind] = max(abs(st.nmt.fun{funidx}(:)));
                     [peakvox_idx,peaktime_idx] = ind2sub(size(st.nmt.fun{funidx}),peakind);
                     cfg.time_idx(1) = peaktime_idx;
                     cfg.vox_idx = peakvox_idx;
                 end
                 
                 if(~isfield(cfg,'time') && isfield(cfg,'vox'))
-                    [~,peaktime_idx] = max(abs(st.nmt.fun{funidx}(cfg.vox_idx,:)));
+                    [dum,peaktime_idx] = max(abs(st.nmt.fun{funidx}(cfg.vox_idx,:)));
                     cfg.time_idx(1) = peaktime_idx;
                 end
                 
                 if(isfield(cfg,'time') && ~isfield(cfg,'vox'))
-                    [~,peakvox_idx] = max(abs(st.nmt.fun{funidx}(cfg.time_idx,:)));
+                    [dum,peakvox_idx] = max(abs(st.nmt.fun{funidx}(cfg.time_idx,:)));
                     cfg.vox_idx = peakvox_idx;
                 end
                 
@@ -794,7 +798,7 @@ for funidx = 1:length(funparameters)
                 st.nmt.freq = functional.freqbands;
                 
                 if(~isfield(cfg,'time') && ~isfield(cfg,'vox'))
-                    [~,peakind] = max(abs(st.nmt.fun{funidx}(:)));
+                    [dum,peakind] = max(abs(st.nmt.fun{funidx}(:)));
                     [peakvox_idx,peaktime_idx,peakfreq_idx] = ind2sub(size(st.nmt.fun{funidx}),peakind);
                     cfg.time_idx(1) = peaktime_idx;
                     cfg.freq_idx(1) = peakfreq_idx;
@@ -802,12 +806,12 @@ for funidx = 1:length(funparameters)
                 end
                 
                 if(~isfield(cfg,'time') && isfield(cfg,'vox'))
-                    [~,peaktime_idx] = max(abs(st.nmt.fun{funidx}(cfg.vox_idx,:)));
+                    [dum,peaktime_idx] = max(abs(st.nmt.fun{funidx}(cfg.vox_idx,:)));
                     cfg.time_idx(1) = peaktime_idx;
                 end
                 
                 if(isfield(cfg,'time') && ~isfield(cfg,'vox'))
-                    [~,peakvox_idx] = max(abs(st.nmt.fun{funidx}(cfg.time_idx,:)));
+                    [dum,peakvox_idx] = max(abs(st.nmt.fun{funidx}(cfg.time_idx,:)));
                     cfg.vox_idx = peakvox_idx;
                 end
                 

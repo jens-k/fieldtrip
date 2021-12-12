@@ -1001,6 +1001,7 @@ fprintf('shift arrow-left   : increase horizontal scaling\n');
 fprintf('shift arrow-down   : decrease horizontal scaling\n');
 fprintf('s                  : toggles between cfg.selectmode options\n');
 fprintf('q                  : quit\n');
+fprintf('m                  : mark current page with selected artifact\n');
 fprintf('------------------------------------------------------------------------------------\n')
 fprintf('\n')
 end % function help_cb
@@ -1581,6 +1582,8 @@ switch key
     % do nothing
   case 'alt+alt'
     % do nothing
+  case 'm'
+		select_range_cb(h, [0 1 -Inf Inf], []);
   otherwise
     setappdata(h, 'opt', opt);
     setappdata(h, 'cfg', cfg);

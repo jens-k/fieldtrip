@@ -1,4 +1,4 @@
-function cfg = data2bids(cfg, varargin)
+function [cfg] = data2bids(cfg, varargin)
 
 % DATA2BIDS is a helper function to convert MRI, MEG, EEG, iEEG or NIRS data to the
 % Brain Imaging Data Structure. The overall idea is that you write a MATLAB script in
@@ -62,6 +62,8 @@ function cfg = data2bids(cfg, varargin)
 %   cfg.mod                     = string
 %   cfg.echo                    = string
 %   cfg.proc                    = string
+%   cfg.space                   = string
+%   cfg.desc                    = string
 %
 % When specifying the output directory in cfg.bidsroot, you can also specify
 % additional information to be added as extra columns in the participants.tsv and
@@ -260,10 +262,12 @@ cfg.run       = ft_getopt(cfg, 'run');
 cfg.mod       = ft_getopt(cfg, 'mod');
 cfg.echo      = ft_getopt(cfg, 'echo');
 cfg.proc      = ft_getopt(cfg, 'proc');
+cfg.space     = ft_getopt(cfg, 'space');
+cfg.desc      = ft_getopt(cfg, 'desc');
 cfg.datatype  = ft_getopt(cfg, 'datatype');
 
 % do a sanity check on the fields that form the filename as key-value pair
-fn = {'sub', 'ses', 'task', 'acq', 'ce', 'rec', 'dir', 'run', 'mod', 'echo', 'proc'};
+fn = {'sub', 'ses', 'task', 'acq', 'ce', 'rec', 'dir', 'run', 'mod', 'echo', 'proc', 'space', 'desc'};
 for i=1:numel(fn)
   if ischar(cfg.(fn{i})) && any(cfg.(fn{i})=='-')
     ft_error('the field cfg.%s cannot contain a "-"', fn{i});
@@ -693,6 +697,7 @@ if isempty(cfg.outputfile)
     filename = add_entity(filename, 'mod',  cfg.mod);
     filename = add_entity(filename, 'echo', cfg.echo);
     filename = add_entity(filename, 'proc', cfg.proc);
+    filename = add_entity(filename, 'desc', cfg.desc);
     filename = add_datatype(filename, cfg.datatype);
     if ~isempty(cfg.ses)
       % construct the output filename, with session directory
@@ -1360,6 +1365,11 @@ if need_channels_tsv
   % channel information can come from the header and from cfg.channels
   channels_tsv = hdr2table(hdr);
   channels_tsv = merge_table(channels_tsv, cfg.channels, 'name');
+
+  % columns should appear in a specific order
+  required = {'name', 'type', 'units', 'low_cutoff', 'high_cutoff'};
+  optional = setdiff(channels_tsv.Properties.VariableNames, required, 'stable');
+  channels_tsv = sort_columns(channels_tsv, [required, optional]);
   
   % the default for cfg.channels consists of one row where all values are nan, this needs to be removed
   keep = false(size(channels_tsv.name));
@@ -1379,7 +1389,7 @@ if need_channels_tsv
   channels_tsv.type(strcmpi(channels_tsv.type, 'respiration')) = {'RESP'};
   channels_tsv.type(strcmpi(channels_tsv.type, 'headloc'))     = {'HLU'};
   channels_tsv.type(strcmpi(channels_tsv.type, 'headloc_gof')) = {'FITERR'};
-  channels_tsv.type(contains(channels_tsv.type, 'trigger', 'IgnoreCase', true)) = {'TRIG'};
+  channels_tsv.type(strcmpi(channels_tsv.type, 'trigger'))     = {'TRIG'};
   
   % channel types in BIDS must be in upper case
   channels_tsv.type = upper(channels_tsv.type);
@@ -1511,9 +1521,9 @@ end % need_optodes_tsv
 if need_coordsystem_json
   if isfield(hdr, 'grad') && ft_senstype(hdr.grad, 'ctf')
     % coordinate system for MEG sensors
-    coordsystem_json.MEGCoordinateSystem            = 'CTF';
-    coordsystem_json.MEGCoordinateUnits             = 'cm';
-    coordsystem_json.MEGCoordinateSystemDescription = 'CTF head coordinates, orientation ALS, origin between the ears';
+    coordsystem_json.MEGCoordinateSystem                 = 'CTF';
+    coordsystem_json.MEGCoordinateUnits                  = 'cm';
+    coordsystem_json.MEGCoordinateSystemDescription      = 'CTF head coordinates, orientation ALS, origin between the ears';
     % coordinate system for head localization coils
     coordsystem_json.HeadCoilCoordinates                 = []; % see below
     coordsystem_json.HeadCoilCoordinateSystem            = 'CTF';
@@ -1527,26 +1537,27 @@ if need_coordsystem_json
         coordsystem_json.HeadCoilCoordinates.(fixname(label{i})) = position(:,i)';
       end
     end
+    
   elseif isfield(hdr, 'grad') && ft_senstype(hdr.grad, 'neuromag')
     % coordinate system for MEG sensors
-    coordsystem_json.MEGCoordinateSystem            = 'ElektaNeuromag';
-    coordsystem_json.MEGCoordinateUnits             = 'm';
-    coordsystem_json.MEGCoordinateSystemDescription = 'Neuromag head coordinates, orientation RAS, origin between the ears';
+    coordsystem_json.MEGCoordinateSystem                 = 'ElektaNeuromag';
+    coordsystem_json.MEGCoordinateUnits                  = 'm';
+    coordsystem_json.MEGCoordinateSystemDescription      = 'Neuromag head coordinates, orientation RAS, origin between the ears';
     % coordinate system for head localization coils
-    coordsystem_json.HeadCoilCoordinates                 = [];  % getting from the dataset header
+    coordsystem_json.HeadCoilCoordinates                 = []; % see below
     coordsystem_json.HeadCoilCoordinateSystem            = 'ElektaNeuromag';
     coordsystem_json.HeadCoilCoordinateUnits             = 'm';
     coordsystem_json.HeadCoilCoordinateSystemDescription = 'Neuromag head coordinates, orientation RAS, origin between the ears';
     if isempty(coordsystem_json.HeadCoilCoordinates)
       coordsystem_json = rmfield(coordsystem_json, 'HeadCoilCoordinates'); % needed to set the names afterwards
-      idxHPI= find([hdr.orig.dig.kind] == 2); % count the kind==2 (HLU in the Elekta/Megin system), usually 4 or 5
+      idxHPI = find([hdr.orig.dig.kind] == 2); % count the kind==2 (HLU in the Elekta/Megin system), usually 4 or 5
       for i=1:length(idxHPI)
         coordsystem_json.HeadCoilCoordinates.(['coil' num2str(i)]) = hdr.orig.dig(idxHPI(i)).r';
       end
-      
     end
+    
     % coordinates of the anatomical landmarks (LPA/RPA/NAS)
-    coordsystem_json.AnatomicalLandmarkCoordinates                 = [];  % getting from the dataset header
+    coordsystem_json.AnatomicalLandmarkCoordinates                 = []; % see below
     coordsystem_json.AnatomicalLandmarkCoordinateSystem            = 'ElektaNeuromag';
     coordsystem_json.AnatomicalLandmarkCoordinateUnits             = 'm';
     coordsystem_json.AnatomicalLandmarkCoordinateSystemDescription = 'Neuromag head coordinates, orientation RAS, origin between the ears';
@@ -1690,11 +1701,9 @@ if need_events_tsv
     events_tsv.Properties.VariableNames = lower(events_tsv.Properties.VariableNames);
     
     % ensure that the onset and duration appear as the first two columns
-    order = nan(1, size(events_tsv,2));
-    order(1) = find(strcmp(events_tsv.Properties.VariableNames, 'onset'));
-    order(2) = find(strcmp(events_tsv.Properties.VariableNames, 'duration'));
-    order(3:end) = setdiff(1:size(events_tsv,2), order([1 2]));
-    events_tsv = events_tsv(:,order);
+    required = {'onset', 'duration'};
+    optional = setdiff(events_tsv.Properties.VariableNames, required, 'stable');
+    events_tsv = sort_columns(events_tsv, [required, optional]);
     
     % sort the events ascending on the onset
     events_tsv = sortrows(events_tsv, 'onset');
@@ -1762,10 +1771,11 @@ switch cfg.method
             ft_sourceplot(tmpcfg, mri);
           end
         end
-        ft_info('writing %s\n', cfg.outputfile);
+        ft_info('writing ''%s''\n', cfg.outputfile);
         ft_write_mri(cfg.outputfile, mri, 'dataformat', 'nifti');
         
       case {'ctf_ds', 'ctf_meg4', 'ctf_res4', 'ctf151', 'ctf275', 'neuromag_fif', 'neuromag122', 'neuromag306'}
+        % we cannot write MEG data back to its native format
         ft_error('please use a system specific tool for converting MEG datasets');
         
       case {'presentation_log'}
@@ -1780,20 +1790,20 @@ switch cfg.method
             % write the data in BrainVision core file format
             [p, f, x] = fileparts(cfg.outputfile);
             cfg.outputfile = fullfile(p, [f '.vhdr']);
-            ft_info('writing %s\n', cfg.outputfile);
+            ft_info('writing ''%s''\n', cfg.outputfile);
             ft_write_data(cfg.outputfile, dat, 'dataformat', 'brainvision_eeg', 'header', hdr, 'event', trigger);
           case {'nirs'}
             % write the data in SNIRF file format
             [p, f, x] = fileparts(cfg.outputfile);
             cfg.outputfile = fullfile(p, [f '.snirf']);
-            ft_info('writing %s\n', cfg.outputfile);
+            ft_info('writing ''%s''\n', cfg.outputfile);
             ft_write_data(cfg.outputfile, dat, 'dataformat', 'snirf', 'header', hdr, 'event', trigger);
           case {'physio', 'stim', 'eyetracker', 'motion'}
             % write the data according to the Stim and Physio format as specified at
             % https://bids-specification.readthedocs.io/en/stable/04-modality-specific-files/06-physiological-and-other-continuous-recordings.html
             [p, f, x] = fileparts(cfg.outputfile);
             cfg.outputfile = fullfile(p, [f '.tsv']);
-            ft_info('writing %s\n', cfg.outputfile);
+            ft_info('writing ''%s''\n', cfg.outputfile);
             writematrix(dat', cfg.outputfile, 'FileType', 'text', 'Delimiter', '\t'); % without headers, the JSON will be written further down
           case {'events'}
             % add the TSV file extension, this is needed for behavioral data represented in scans.tsv
@@ -1861,7 +1871,11 @@ for i=1:numel(modality)
       f = remove_entity(f, 'mod');      % remove _mod-something
       f = remove_entity(f, 'echo');     % remove _echo-something
       f = remove_entity(f, 'proc');     % remove _proc-something
+      f = remove_entity(f, 'desc');     % remove _desc-something
       f = remove_datatype(f);           % remove _meg, _eeg, etc.
+      if ismember(modality{i}, {'mri', 'meg', 'motion', 'coordsystem'})
+         f = add_entity(f, 'space', cfg.space);
+       end
       filename = fullfile(p, [f '_coordsystem.json']);
     else
       % just replace the extension with json
@@ -1887,7 +1901,7 @@ for i=1:numel(modality)
         ft_write_json(filename, mergeconfig(modality_json, existing, false))
       case 'no'
         % do nothing
-        ft_info('not writing %s\n', filename);
+        ft_info('not writing ''%s''\n', filename);
       otherwise
         ft_error('incorrect option for cfg.writejson');
     end % switch writejson
@@ -1917,7 +1931,11 @@ for i=1:numel(modality)
       f = remove_entity(f, 'mod');      % remove _mod-something
       f = remove_entity(f, 'echo');     % remove _echo-something
       f = remove_entity(f, 'proc');     % remove _proc-something
+      f = remove_entity(f, 'desc');     % remove _desc-something
       f = remove_datatype(f);           % remove _meg, _eeg, etc.
+      if ismember(modality{i}, {'electrodes', 'optodes'})
+        f = add_entity(f, 'space', cfg.space);
+      end
       filename = fullfile(p, sprintf('%s_%s.tsv', f, modality{i}));
     else
       [p, f] = fileparts(cfg.outputfile);
@@ -1955,7 +1973,7 @@ for i=1:numel(modality)
         ft_write_tsv(filename, modality_tsv);
       case 'no'
         % do nothing
-        ft_info('not writing %s\n', filename);
+        ft_info('not writing ''%s''\n', filename);
       otherwise
         ft_error('incorrect option for cfg.writetsv');
     end % switch
@@ -2047,6 +2065,9 @@ if ~isempty(cfg.bidsroot)
   else
     scans_tsv = this;
   end
+  
+  % the filename should have forward slashes, see #1957 and #1959
+  scans_tsv.filename = strrep(scans_tsv.filename, '\', '/');
   
   % write the updated file back to disk
   ft_write_tsv(filename, scans_tsv);
@@ -2351,12 +2372,33 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SUBFUNCTION
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function y = sort_fields(x)
-fn = fieldnames(x);
-fn = sort(fn);
+function y = sort_columns(x, desired)
+original = x.Properties.VariableNames;
+if nargin<2
+  % sort alphabetically
+  desired = sort(original);
+else
+  % only keep the desired columns that are actually present
+  desired = intersect(desired, original, 'stable');
+end
+[dum, order] = ismember(desired, original);  
+y = x(:, order);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% SUBFUNCTION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function y = sort_fields(x, desired)
+original = fieldnames(x);
+if nargin<2
+  % sort alphabetically
+  desired = sort(original);
+else
+  % only keep the desired fields that are actually present
+  desired = intersect(desired, original, 'stable');
+end
 y = struct();
-for i=1:numel(fn)
-  y.(fn{i}) = x.(fn{i});
+for i=1:numel(desired)
+  y.(desired{i}) = x.(desired{i});
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2405,6 +2447,9 @@ elseif isnumeric(val) && numel(val)>1 && any(isnan(val))
   % convert and use recursion to make all elements compatible
   val = num2cell(val);
   val = cellfun(@output_compatible, val, 'UniformOutput', false);
+elseif isdatetime(val)
+  % see https://bids-specification.readthedocs.io/en/stable/02-common-principles.html#units
+  val = datestr(val, 'yyyy-mm-ddTHH:MM:SS');
 else
   % write [] as 'n/a'
   % write nan as 'n/a'

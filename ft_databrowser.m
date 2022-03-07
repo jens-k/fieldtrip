@@ -1721,9 +1721,29 @@ switch key
   case 'shift+shift'
     % do nothing
   case 'alt+alt'
-    % do nothing
+	% do nothing
   case 'b'
-		select_range_cb(h, [0 1 -Inf Inf], []);
+    select_range_cb(h, [0 1 -Inf Inf], []);
+  case 'comma' % comma hyphen
+    eval('cfg.preproc.hpfilter = ''no'';')
+    maincfg = getappdata(h, 'cfg');
+    maincfg.preproc = cfg.preproc;
+    setappdata(h, 'cfg', maincfg)
+    redraw_cb(h, eventdata)
+  case 'period' % comma hyphen
+    eval('cfg.preproc.hpfilter = ''yes'';')
+    eval('cfg.preproc.hpfreq = 0.5;')
+    maincfg = getappdata(h, 'cfg');
+    maincfg.preproc = cfg.preproc;
+    setappdata(h, 'cfg', maincfg)
+    redraw_cb(h, eventdata)
+  case 'hyphen' % comma hyphen
+    eval('cfg.preproc.hpfilter = ''yes'';')
+    eval('cfg.preproc.hpfreq = 2;')	
+    maincfg = getappdata(h, 'cfg');
+    maincfg.preproc = cfg.preproc;
+    setappdata(h, 'cfg', maincfg)
+    redraw_cb(h, eventdata)
   otherwise
     help_cb(h, eventdata);
 end

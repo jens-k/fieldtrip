@@ -562,10 +562,10 @@ elseif filetype_check_extension(filename, '.slor')
   content = 'source reconstruction';
   
   % known AFNI file types
-elseif filetype_check_extension(filename, '.brik') || filetype_check_extension(filename, '.BRIK')
+elseif filetype_check_extension(lower(filename), '.brik')
   type = 'afni_brik';
   content = 'MRI image data';
-elseif filetype_check_extension(filename, '.head') || filetype_check_extension(filename, '.HEAD')
+elseif filetype_check_extension(lower(filename), '.head')
   type = 'afni_head';
   content = 'MRI header data';
   
@@ -1430,6 +1430,10 @@ elseif filetype_check_extension(filename, '.csv') && filetype_check_header(filen
   type = 'liberty_csv';
   manufacturer = 'Polhemus Liberty';
   content = 'motion capture data';
+elseif filetype_check_extension(filename, '.csv') && filetype_check_header(filename, '"Date",')
+  type = 'sensys_csv';
+  manufacturer = 'Sensys';
+  content = 'fluxgate magnetometer data';
 elseif filetype_check_extension(filename, '.csv')
   type = 'csv';
   manufacturer = 'Generic';
@@ -1551,6 +1555,14 @@ elseif filetype_check_extension(filename, '.meghdf5')
   type = 'yorkinstruments_hdf5';
   manufacturer = 'York Instruments';
   content = 'MEG header and data';
+elseif filetype_check_extension(filename, '.jnii')
+  type = 'openjdata_jnii';
+  manufacturer = 'OpenJData'; % See http://openjdata.org
+  content = 'MRI';
+elseif filetype_check_extension(filename, '.bnii')
+  type = 'openjdata_bnii';
+  manufacturer = 'OpenJData'; % See http://openjdata.org
+  content = 'MRI';
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

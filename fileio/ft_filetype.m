@@ -45,6 +45,7 @@ function [type] = ft_filetype(filename, desired, varargin)
 %  - EDF
 %  - EEProbe
 %  - Elektra/Neuromag
+%  - EEGsynth *.tsv
 %  - FreeSurfer
 %  - LORETA
 %  - Localite
@@ -72,7 +73,7 @@ function [type] = ft_filetype(filename, desired, varargin)
 %  - NIRx *.tpl, *.wl1 and *.wl2
 %  - York Instruments *.meghdf5
 
-% Copyright (C) 2003-2020, Robert Oostenveld
+% Copyright (C) 2003-2022, Robert Oostenveld
 %
 % This file is part of FieldTrip, see http://www.fieldtriptoolbox.org
 % for the documentation and details.
@@ -92,7 +93,7 @@ function [type] = ft_filetype(filename, desired, varargin)
 %
 % $Id$
 
-% these are for remembering the type on subsequent calls with the same input arguments
+% these are for speeding up subsequent calls with the same input arguments
 persistent previous_argin previous_argout previous_pwd
 
 if nargin<2
@@ -1111,7 +1112,7 @@ elseif filetype_check_extension(filename, '.label') && filetype_check_header(fil
   
 elseif filetype_check_extension(filename, '.txt') && numel(strfind(filename,'_nrs_')) == 1
   % This is for the ASCII-formatted NIRS data acquired with the UCL-BIRKBECK machine and postprocessed by the Paris group
-  % 
+  %
   % This may be improved by looking into the file, rather than assuming the filename
   % has "_nrs_" somewhere. Also, distinction by the different file types could be
   % made
@@ -1567,6 +1568,10 @@ elseif filetype_check_extension(filename, '.bnii')
   type = 'openjdata_bnii';
   manufacturer = 'OpenJData'; % See http://openjdata.org
   content = 'MRI';
+elseif filetype_check_extension(filename, '.tsv') && filetype_check_header(filename, sprintf('event\tvalue\ttimestamp'))
+  type = 'eegsynth_tsv';
+  manufacturer = 'EEGsynth recordtrigger';
+  content = 'events';
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

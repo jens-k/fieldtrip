@@ -547,7 +547,8 @@ artdata.cfg.trl        = [1 endsample 0];
 
 % determine the unique artifact types and corresponding colors, this only needs to be done once
 artifacttypes = artlabel;
-artifactcolors = colorcheck([0.9686 0.7608 0.7686; 0.7529 0.7098 0.9647; 0.7373 0.9725 0.6824; 0.8118 0.8118 0.8118; 0.9725 0.6745 0.4784; 0.9765 0.9176 0.5686; 0.6863 1 1; 1 0.6863 1; 0 1 0.6000], numel(artdata.label));
+% artifactcolors = colorcheck([0.9686 0.7608 0.7686; 0.7529 0.7098 0.9647; 0.7373 0.9725 0.6824; 0.8118 0.8118 0.8118; 0.9725 0.6745 0.4784; 0.9765 0.9176 0.5686; 0.6863 1 1; 1 0.6863 1; 0 1 0.6000], numel(artdata.label));
+artifactcolors = colorcheck([228 26 28;55 126 184;77 175 74;152 78 163;255 127 0;255 255 51;166 86 40;247 129 191;153 153 153]/255, numel(artdata.label));
 
 % determine the unique event types and corresponding colors, this only needs to be done once
 if ~isempty(event) && isstruct(event)
@@ -1373,6 +1374,7 @@ fprintf('i                  : identify a specific channel\n');
 fprintf('m                  : toggles between cfg.viewmode options\n');
 fprintf('s                  : toggles between cfg.selectmode options\n');
 fprintf('q                  : quit\n');
+fprintf('b                  : mark current block (b) with selected artifact\n');
 fprintf('------------------------------------------------------------------------------------\n')
 fprintf('\n')
 end % function help_cb
@@ -1728,7 +1730,29 @@ switch key
   case 'shift+shift'
     % do nothing
   case 'alt+alt'
-    % do nothing
+	% do nothing
+  case 'b'
+    select_range_cb(h, [0 1 -Inf Inf], []);
+  case 'comma' % comma hyphen
+    eval('cfg.preproc.hpfilter = ''no'';')
+    maincfg = getappdata(h, 'cfg');
+    maincfg.preproc = cfg.preproc;
+    setappdata(h, 'cfg', maincfg)
+    redraw_cb(h, eventdata)
+  case 'period' % comma hyphen
+    eval('cfg.preproc.hpfilter = ''yes'';')
+    eval('cfg.preproc.hpfreq = 0.5;')
+    maincfg = getappdata(h, 'cfg');
+    maincfg.preproc = cfg.preproc;
+    setappdata(h, 'cfg', maincfg)
+    redraw_cb(h, eventdata)
+  case 'hyphen' % comma hyphen
+    eval('cfg.preproc.hpfilter = ''yes'';')
+    eval('cfg.preproc.hpfreq = 2;')	
+    maincfg = getappdata(h, 'cfg');
+    maincfg.preproc = cfg.preproc;
+    setappdata(h, 'cfg', maincfg)
+    redraw_cb(h, eventdata)
   otherwise
     help_cb(h, eventdata);
 end
